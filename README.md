@@ -149,4 +149,81 @@ sql문을 이용하여 테이블을 출력하여준다<br>
 후보번호와 유권자확인은 각각 셀렉트박스와 라이오버튼으로 만들어준다<br>
 ![image](https://user-images.githubusercontent.com/102035198/210286882-b3948e6e-660d-46a1-aacf-23c358f009fa.png)
 ![image](https://user-images.githubusercontent.com/102035198/210286891-d637642b-c7c2-4141-b870-f65a0109ec0d.png)
-# 
+# 투표검수조회
+```
+<%
+    String sql = "select V_NAME ,'19'||SUBSTR(V_JUMIN,1,2)||'년'||SUBSTR(V_JUMIN,3,2)||'월'||SUBSTR(V_JUMIN,5,2)||'일생' AS V_BIRTH, "
+    	+ "TRUNC(MONTHS_BETWEEN(SYSDATE, TO_DATE(SUBSTR('19'||V_JUMIN,1,8), 'YYYYMMDD'))/12) AS V_AGE, "
+    	+ "CASE SUBSTR(V_JUMIN,7,1) WHEN '1' THEN '남자' WHEN '2' THEN '여자' WHEN '3' THEN '남자' WHEN '4' THEN '여자' END AS V_GENDER, "
+    	+ "V_NO , SUBSTR(V_TIME,1,2) || ':' || SUBSTR(V_TIME,3,2) AS V_TIME, "
+    	+ "CASE V_CONFIRM WHEN 'Y' THEN '확인' WHEN 'N' THEN '미확인' END AS V_CONFIRM "
+    	+ "from TBL_VOTE_202005 " 
+    	+ "where V_AREA = '제1투표장'";
+    
+    Connection conn = DBConnect.getConnection();
+    PreparedStatement pstmt = conn.prepareStatement(sql);
+    ResultSet rs = pstmt.executeQuery();
+%>
+```
+이 페이지는 제1투표장에서 투표를 한 사람만 뜨는 페이지이다<br>
+만나이를 구해주고 주민번호 뒷자리 숫자를 이용하여 성별을 나누어 주었다<br>
+유권자확인이 Y면 확인 N이면 미확인으로 출력하여 준다<br>
+```
+<table class="tableList">
+			<tr>
+				<td>성명</td>
+				<td>생년월일</td>
+				<td>나이</td>
+				<td>성별</td>
+				<td>후보번호</td>
+				<td>투표시간</td>
+				<td>유권자확인</td>
+			</tr>
+			<%while(rs.next()){ %>
+			<tr>
+				<td><%=rs.getString(1) %></td>
+				<td><%=rs.getString(2) %></td>
+				<td><%=rs.getString(3) %></td>
+				<td><%=rs.getString(4) %></td>
+				<td><%=rs.getString(5) %></td>
+				<td><%=rs.getString(6) %></td>
+				<td><%=rs.getString(7) %></td>
+			</tr>
+			<%} %>
+		</table>
+```
+실행화면은 이렇다<br>
+![image](https://user-images.githubusercontent.com/102035198/210287364-67c3aeb7-f2da-4d4e-8d81-97863f32aed9.png)<br>
+# 후보자등수
+```
+<%
+    String sql = "select  v_no, m_name, count(*) cnt "
+    			+ "from TBL_VOTE_202005 vote, TBL_MEMBER_202005 mem "
+    			+ "where vote.v_no=mem.m_no and vote.V_CONFIRM = 'Y' "
+    			+ "group by v_no, m_name "
+    			+ "order by cnt desc "; 
+    
+    Connection conn = DBConnect.getConnection();
+    PreparedStatement ps = conn.prepareStatement(sql);
+    ResultSet rs = ps.executeQuery();
+    
+%>
+```
+후보번호와 성명, 투표건수를 count함수로 구해준다<br>
+```
+<table class="tableList">
+				<tr>
+					<td>후보번호</td>
+					<td>성명</td>
+					<td>총투표건수</td>
+				</tr>
+				<%while(rs.next()){ %>
+				<tr>
+					<td><%=rs.getString(1) %></td>
+					<td><%=rs.getString(2) %></td>
+					<td><%=rs.getString(3) %></td>
+				</tr>
+				<%} %>
+			</table>
+```
+![image](https://user-images.githubusercontent.com/102035198/210287451-6fb34db0-f34e-4efe-abd1-1a2123b459c9.png)<br>
